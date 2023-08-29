@@ -224,8 +224,8 @@ class ConfFile(object):
     #     return list_ssh
 
     def get_cluster_name(self):
-        noontime = time.strftime('%y%m%d')
-        return f"{self.config['cluster']}_{noontime}"
+        # noontime = time.strftime('%y%m%d')
+        return self.config['cluster']
 
     def get_bindnetaddr_list(self):
         node = self.config['node'][0]
