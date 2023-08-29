@@ -1,0 +1,17 @@
+cluster: <cluster name>
+bindnetaddr: <bindnetaddr> # Corosync 版本是 3.x.x 则不需要改项配置
+node:
+  - name: <hostname>
+    ip: <ip>
+    id: <id>
+    heartbeat_line:
+      - <IP>
+    ssh_user: <user>
+    ssh_password: <passowrd>
+  - name: <hostname>
+    ip: <ip>
+    id: <id>
+    heartbeat_line:
+      - <IP>
+    ssh_user: <user>            # SSH 用户名，选填
+    ssh_password: <passowrd>    # SSH 密码，选填
