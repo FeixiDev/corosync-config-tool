@@ -89,13 +89,13 @@ def exec_cmd(cmd, conn=None):
     else:
         result = local_cmd(cmd)
     result = result.decode() if isinstance(result, bytes) else result
-    log_data = f"{get_host_ip()} - {cmd} - {result['rt'].decode()}"
+    log_data = f"{get_host_ip()} - {cmd} - {result}"
     Log().logger.info(log_data)
     if result['st']:
         pass
     if result['st'] is False:
         sys.exit()
-    return result['rt'].decode()
+    return result['rt']
 
 
 class Log(object):

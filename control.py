@@ -1,3 +1,4 @@
+import time
 import corosync_cmds
 import utils
 import re
@@ -26,7 +27,7 @@ class Connect(object):
             if local_ip == node['ip']:
                 self.list_ssh.append(None)
             else:
-                ssh_conn = utils.SSHConn(node['ip'], 22, node['name'], node['ssh_password'])
+                ssh_conn = utils.SSHConn(host=node['ip'], password=node['ssh_password'])
                 self.list_ssh.append(ssh_conn)
 
 
@@ -36,7 +37,12 @@ class CorosyncConsole(object):
 
     def sync_time(self):
         for ssh in self.conn.list_ssh:
-            corosync_cmds.sync_time(ssh)
+            result = corosync_cmds.sync_time(ssh)
+            if isinstance(result, bytes):
+                result = result.decode('utf-8')
+            if "no server" in result:
+                print(result)
+                sys.exit()
 
     def corosync_conf_change(self):
         cluster_name = self.conn.conf_file.get_cluster_name()
@@ -47,7 +53,10 @@ class CorosyncConsole(object):
         nodelist_3 = self.conn.conf_file.get_nodelist_3()
 
         for ssh in self.conn.list_ssh:
+            corosync_cmds.backup_corosync(ssh)
             result = corosync_cmds.check_corosync(ssh)
+            if isinstance(result, bytes):
+                result = result.decode('utf-8')
             match = re.search(r'\d+', result)
             version = match.group(0)
             if version == '3':
@@ -75,6 +84,7 @@ class CorosyncConsole(object):
             sys.exit()
 
     def print_corosync(self):
+        time.sleep(5)
         for ssh in self.conn.list_ssh:
             result = corosync_cmds.check_corosync_config(ssh)
             print(result)
