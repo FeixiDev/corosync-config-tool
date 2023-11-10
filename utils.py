@@ -2,57 +2,57 @@ import datetime
 import logging
 import socket
 import sys
-import paramiko
+# import paramiko
 import subprocess
 import yaml
-import time
+# import time
 import json
 
 
-class SSHConn(object):
-    def __init__(self, host, port=22, username="root", password=None, timeout=8):
-        self._host = host
-        self._port = port
-        self._username = username
-        self._password = password
-        self.timeout = timeout
-        self.ssh_connection = None
-        self.ssh_conn()
+# class SSHConn(object):
+#     def __init__(self, host, port=22, username="root", password=None, timeout=8):
+#         self._host = host
+#         self._port = port
+#         self._username = username
+#         self._password = password
+#         self.timeout = timeout
+#         self.ssh_connection = None
+#         self.ssh_conn()
 
-    def ssh_conn(self):
-        """
-        SSH连接
-        """
-        try:
-            conn = paramiko.SSHClient()
-            conn.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-            conn.connect(hostname=self._host,
-                         username=self._username,
-                         port=self._port,
-                         password=self._password,
-                         timeout=self.timeout,
-                         look_for_keys=False,
-                         allow_agent=False)
-            self.ssh_connection = conn
-        except paramiko.AuthenticationException:
-            print(f" Error SSH connection message of {self._host}")
-        except Exception as e:
-            print(f" Failed to connect {self._host}")
+#     def ssh_conn(self):
+#         """
+#         SSH连接
+#         """
+#         try:
+#            conn = paramiko.SSHClient()
+#            conn.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+#            conn.connect(hostname=self._host,
+#                         username=self._username,
+#                         port=self._port,
+#                         password=self._password,
+#                         timeout=self.timeout,
+#                         look_for_keys=False,
+#                         allow_agent=False)
+#            self.ssh_connection = conn
+#        except paramiko.AuthenticationException:
+#            print(f" Error SSH connection message of {self._host}")
+#        except Exception as e:
+#            print(f" Failed to connect {self._host}")
 
-    def exec_cmd(self, command):
-        """
-        命令执行
-        """
-        if self.ssh_connection:
-            stdin, stdout, stderr = self.ssh_connection.exec_command(command)
-            result = stdout.read()
-            result = result.decode() if isinstance(result, bytes) else result
-            if result is not None:
-                return {"st": True, "rt": result}
+#     def exec_cmd(self, command):
+#        """
+#        命令执行
+#        """
+#        if self.ssh_connection:
+#            stdin, stdout, stderr = self.ssh_connection.exec_command(command)
+#            result = stdout.read()
+#            result = result.decode() if isinstance(result, bytes) else result
+#            if result is not None:
+#                return {"st": True, "rt": result}
 
-            err = stderr.read()
-            if err is not None:
-                return {"st": False, "rt": err}
+#            err = stderr.read()
+#            if err is not None:
+#                return {"st": False, "rt": err}
 
 
 def local_cmd(command):
@@ -88,14 +88,15 @@ def exec_cmd(cmd, conn=None):
         result = conn.exec_cmd(cmd)
     else:
         result = local_cmd(cmd)
-    result = result.decode() if isinstance(result, bytes) else result
-    log_data = f"{get_host_ip()} - {cmd} - {result}"
+    result_str = result['rt'].decode() if isinstance(result['rt'], bytes) else result
+    log_data = f"{get_host_ip()} - {cmd} - {result_str}"
     Log().logger.info(log_data)
     if result['st']:
         pass
     if result['st'] is False:
         sys.exit()
-    return result['rt']
+
+    return result_str
 
 
 class Log(object):
@@ -200,6 +201,7 @@ class ConfFile(object):
     def __init__(self):
         self.yaml_file = 'corosync_config.yaml'
         self.config = self.read_yaml()
+        self.nodelist_generated = False  # 添加标记
 
     def read_yaml(self):
         """读YAML文件"""
