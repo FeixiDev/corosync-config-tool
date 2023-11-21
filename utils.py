@@ -7,7 +7,7 @@ import subprocess
 import yaml
 # import time
 import json
-
+import re
 
 # class SSHConn(object):
 #     def __init__(self, host, port=22, username="root", password=None, timeout=8):
@@ -179,6 +179,25 @@ class FileEdit(object):
         self.data = '\n'.join(lst)
 
         return self.data
+    
+    def add_interface_to_totem(self, interface_content):   # 21
+        """
+        在 totem 配置块中添加 interface
+        :param interface_content: 要添加的 interface 内容
+        """
+        totem_block = re.search(r"totem\s*{([^}]*)}", self.data, re.DOTALL)
+        if totem_block:
+            updated_totem = totem_block.group(0).strip()  # 获取 totem 块内容并去除首尾空格
+
+            # 添加 interface 内容到 totem 块中
+            updated_totem += f"\n{interface_content}"
+
+            # 替换原始的 totem 块内容为更新后的内容
+            self.data = re.sub(r"totem\s*{([^}]*)}", updated_totem, self.data, flags=re.DOTALL)
+
+            return self.data
+        else:
+            return "totem block not found in the configuration data"
 
     @staticmethod
     def add_data_to_head(text, data_add):
