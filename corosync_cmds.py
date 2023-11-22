@@ -82,7 +82,7 @@ def change_corosync3_conf(cluster_name, nodelist, ssh_conn=None):
     editor = utils.FileEdit(corosync_conf_path)
 
     editor.replace_data(f"cluster_name: {original_attr['cluster_name']}", f"cluster_name: {cluster_name}")
-    editor.insert_data("        expected_votes: 2", anchor=quorum_pos, type='under')
+    editor.replace_data(f"provider: corosync_votequorum",f"provider: corosync_votequorum\n        expected_votes: 2")
     editor.insert_data(nodelist, anchor=nodelist_pos, type='above')
 
     utils.exec_cmd(f'echo "{editor.data}" > {corosync_conf_path}', ssh_conn)
