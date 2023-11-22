@@ -51,31 +51,26 @@ class CorosyncConsole(object):
         nodelist_2 = self.conn.conf_file.get_nodelist_2()
         nodelist_3 = self.conn.conf_file.get_nodelist_3()
 
-        for ssh in self.conn.list_ssh:
-            # print(f"{self.conn.list_ssh}")
-            corosync_cmds.backup_corosync(ssh)
-            result = corosync_cmds.check_corosync(ssh)
-            if isinstance(result, bytes):
-                result = result.decode('utf-8')
-            match = re.search(r'\d+', result)
-            # print(f"result: {result}")
-            version = match.group(0)
-            # print(f"version: {version}")
-            if version == '3':
-                corosync_cmds.change_corosync3_conf(
-                    cluster_name=cluster_name,
-                    nodelist=nodelist_3,
-                    ssh_conn=ssh
-                )
-            elif version == '2':
-                corosync_cmds.change_corosync2_conf(
-                    cluster_name=cluster_name,
-                    bindnetaddr_list=bindnetaddr_list,
-                    bindnetaddr=bindnetaddr,
-                    interface=interface,
-                    nodelist=nodelist_2,
-                    ssh_conn=ssh
-                )
+        # for ssh in self.conn.list_ssh:
+            # corosync_cmds.backup_corosync(ssh)
+            # result = corosync_cmds.check_corosync(ssh)
+            # if isinstance(result, bytes):
+            #     result = result.decode('utf-8')
+            # match = re.search(r'\d+', result)
+            # version = match.group(0)
+        if bindnetaddr == None:
+            corosync_cmds.change_corosync3_conf(
+                cluster_name=cluster_name,
+                nodelist=nodelist_3,
+            )
+        elif bindnetaddr is not None:
+            corosync_cmds.change_corosync2_conf(
+                cluster_name=cluster_name,
+                bindnetaddr_list=bindnetaddr_list,
+                bindnetaddr=bindnetaddr,
+                interface=interface,
+                nodelist=nodelist_2,
+            )
 
     def restart_corosync(self):
         try:
