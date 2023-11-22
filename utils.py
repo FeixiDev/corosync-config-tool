@@ -276,9 +276,11 @@ class ConfFile(object):
     def get_nodelist_2(self):
         str_node_all = ""
         hostname_list = []
+        id_list = []
         for hostname in self.config['node']:
             hostname_list.append(hostname['name'])
-        for node, hostname in zip(self.config['node'], hostname_list):
+            id_list.append(hostname['id'])
+        for node, hostname, name_id in zip(self.config['node'], hostname_list, id_list):
             dict_node = {}
             str_node = "node "
             index = 0
@@ -286,9 +288,10 @@ class ConfFile(object):
                 dict_node.update({f"ring{index}_addr": ip})
                 index += 1
             dict_node.update({'name': hostname})
+            dict_node.update({'nodeid': name_id})
             str_node += json.dumps(dict_node, indent=4, separators=(',', ': '))
             str_node = FileEdit.remove_comma(str_node)
-            str_node_all += str_node + '\n'
+            str_node_all += str_node + '\n'      #####
         str_node_all = FileEdit.add_data_to_head(str_node_all, '\t')
         str_nodelist = "nodelist {\n%s\n}" % str_node_all
         return str_nodelist
