@@ -84,4 +84,5 @@ class CorosyncConsole(object):
         time.sleep(5)
         for ssh in self.conn.list_ssh:
             result = corosync_cmds.check_corosync_config(ssh)
+            print("-----------------------------")
             print(f"{result}")
