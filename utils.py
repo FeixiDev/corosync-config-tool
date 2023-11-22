@@ -117,7 +117,7 @@ class Log(object):
         file_name = str(now_time) + '.log'
         fh = logging.FileHandler(file_name, mode='a')
         fh.setLevel(logging.DEBUG)
-        formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+        formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s", datefmt='%Y-%m-%d %H:%M:%S')
         fh.setFormatter(formatter)
         logger.addHandler(fh)
 
