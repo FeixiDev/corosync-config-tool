@@ -23,13 +23,12 @@ class Connect(object):
 
     def get_ssh_conn(self):
         local_ip = utils.get_host_ip()
-        for node in self.cluster['node']:
-            if local_ip == node['ip']:
-                self.list_ssh.append(None)
-            else:
-                ssh_conn = utils.SSHConn(host=node['ip'], password=node['ssh_password'])
-                self.list_ssh.append(ssh_conn)
-
+        #for node in self.cluster['node']:
+        #    if local_ip == node['ip']:
+        self.list_ssh.append(None)
+        #    else:
+                # ssh_conn = utils.SSHConn(host=node['ip'], password=node['ssh_password'])
+        #        self.list_ssh.append(None)
 
 class CorosyncConsole(object):
     def __init__(self):
@@ -52,28 +51,26 @@ class CorosyncConsole(object):
         nodelist_2 = self.conn.conf_file.get_nodelist_2()
         nodelist_3 = self.conn.conf_file.get_nodelist_3()
 
-        for ssh in self.conn.list_ssh:
-            corosync_cmds.backup_corosync(ssh)
-            result = corosync_cmds.check_corosync(ssh)
-            if isinstance(result, bytes):
-                result = result.decode('utf-8')
-            match = re.search(r'\d+', result)
-            version = match.group(0)
-            if version == '3':
-                corosync_cmds.change_corosync3_conf(
-                    cluster_name=cluster_name,
-                    nodelist=nodelist_3,
-                    ssh_conn=ssh
-                )
-            elif version == '2':
-                corosync_cmds.change_corosync2_conf(
-                    cluster_name=cluster_name,
-                    bindnetaddr_list=bindnetaddr_list,
-                    bindnetaddr=bindnetaddr,
-                    interface=interface,
-                    nodelist=nodelist_2,
-                    ssh_conn=ssh
-                )
+        # for ssh in self.conn.list_ssh:
+            # corosync_cmds.backup_corosync(ssh)
+            # result = corosync_cmds.check_corosync(ssh)
+            # if isinstance(result, bytes):
+            #     result = result.decode('utf-8')
+            # match = re.search(r'\d+', result)
+            # version = match.group(0)
+        if bindnetaddr == None:
+            corosync_cmds.change_corosync3_conf(
+                cluster_name=cluster_name,
+                nodelist=nodelist_3,
+            )
+        elif bindnetaddr is not None:
+            corosync_cmds.change_corosync2_conf(
+                cluster_name=cluster_name,
+                bindnetaddr_list=bindnetaddr_list,
+                bindnetaddr=bindnetaddr,
+                interface=interface,
+                nodelist=nodelist_2,
+            )
 
     def restart_corosync(self):
         try:
@@ -87,4 +84,5 @@ class CorosyncConsole(object):
         time.sleep(5)
         for ssh in self.conn.list_ssh:
             result = corosync_cmds.check_corosync_config(ssh)
-            print(result)
+            print("-----------------------------")
+            print(f"{result}")

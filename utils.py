@@ -2,57 +2,57 @@ import datetime
 import logging
 import socket
 import sys
-import paramiko
+# import paramiko
 import subprocess
 import yaml
-import time
+# import time
 import json
+import re
 
+# class SSHConn(object):
+#     def __init__(self, host, port=22, username="root", password=None, timeout=8):
+#         self._host = host
+#         self._port = port
+#         self._username = username
+#         self._password = password
+#         self.timeout = timeout
+#         self.ssh_connection = None
+#         self.ssh_conn()
 
-class SSHConn(object):
-    def __init__(self, host, port=22, username="root", password=None, timeout=8):
-        self._host = host
-        self._port = port
-        self._username = username
-        self._password = password
-        self.timeout = timeout
-        self.ssh_connection = None
-        self.ssh_conn()
+#     def ssh_conn(self):
+#         """
+#         SSH连接
+#         """
+#         try:
+#            conn = paramiko.SSHClient()
+#            conn.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+#            conn.connect(hostname=self._host,
+#                         username=self._username,
+#                         port=self._port,
+#                         password=self._password,
+#                         timeout=self.timeout,
+#                         look_for_keys=False,
+#                         allow_agent=False)
+#            self.ssh_connection = conn
+#        except paramiko.AuthenticationException:
+#            print(f" Error SSH connection message of {self._host}")
+#        except Exception as e:
+#            print(f" Failed to connect {self._host}")
 
-    def ssh_conn(self):
-        """
-        SSH连接
-        """
-        try:
-            conn = paramiko.SSHClient()
-            conn.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-            conn.connect(hostname=self._host,
-                         username=self._username,
-                         port=self._port,
-                         password=self._password,
-                         timeout=self.timeout,
-                         look_for_keys=False,
-                         allow_agent=False)
-            self.ssh_connection = conn
-        except paramiko.AuthenticationException:
-            print(f" Error SSH connection message of {self._host}")
-        except Exception as e:
-            print(f" Failed to connect {self._host}")
+#     def exec_cmd(self, command):
+#        """
+#        命令执行
+#        """
+#        if self.ssh_connection:
+#            stdin, stdout, stderr = self.ssh_connection.exec_command(command)
+#            result = stdout.read()
+#            result = result.decode() if isinstance(result, bytes) else result
+#            if result is not None:
+#                return {"st": True, "rt": result}
 
-    def exec_cmd(self, command):
-        """
-        命令执行
-        """
-        if self.ssh_connection:
-            stdin, stdout, stderr = self.ssh_connection.exec_command(command)
-            result = stdout.read()
-            result = result.decode() if isinstance(result, bytes) else result
-            if result is not None:
-                return {"st": True, "rt": result}
-
-            err = stderr.read()
-            if err is not None:
-                return {"st": False, "rt": err}
+#            err = stderr.read()
+#            if err is not None:
+#                return {"st": False, "rt": err}
 
 
 def local_cmd(command):
@@ -88,14 +88,15 @@ def exec_cmd(cmd, conn=None):
         result = conn.exec_cmd(cmd)
     else:
         result = local_cmd(cmd)
-    result = result.decode() if isinstance(result, bytes) else result
-    log_data = f"{get_host_ip()} - {cmd} - {result}"
+    result_str = result['rt'].decode() if isinstance(result['rt'], bytes) else result
+    log_data = f"{get_host_ip()} - {cmd} - {result_str}"
     Log().logger.info(log_data)
     if result['st']:
         pass
     if result['st'] is False:
         sys.exit()
-    return result['rt']
+
+    return result_str
 
 
 class Log(object):
@@ -116,7 +117,7 @@ class Log(object):
         file_name = str(now_time) + '.log'
         fh = logging.FileHandler(file_name, mode='a')
         fh.setLevel(logging.DEBUG)
-        formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+        formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s", datefmt='%Y-%m-%d %H:%M:%S')
         fh.setFormatter(formatter)
         logger.addHandler(fh)
 
@@ -178,6 +179,25 @@ class FileEdit(object):
         self.data = '\n'.join(lst)
 
         return self.data
+    
+    def add_interface_to_totem(self, interface_content):   # 21
+        """
+        在 totem 配置块中添加 interface
+        :param interface_content: 要添加的 interface 内容
+        """
+        totem_block = re.search(r"totem\s*{([^}]*)}", self.data, re.DOTALL)
+        if totem_block:
+            updated_totem = totem_block.group(0).strip()  # 获取 totem 块内容并去除首尾空格
+
+            # 添加 interface 内容到 totem 块中
+            updated_totem += f"\n{interface_content}"
+
+            # 替换原始的 totem 块内容为更新后的内容
+            self.data = re.sub(r"totem\s*{([^}]*)}", updated_totem, self.data, flags=re.DOTALL)
+
+            return self.data
+        else:
+            return "totem block not found in the configuration data"
 
     @staticmethod
     def add_data_to_head(text, data_add):
@@ -200,6 +220,7 @@ class ConfFile(object):
     def __init__(self):
         self.yaml_file = 'corosync_config.yaml'
         self.config = self.read_yaml()
+        self.nodelist_generated = False  # 添加标记
 
     def read_yaml(self):
         """读YAML文件"""
@@ -255,9 +276,11 @@ class ConfFile(object):
     def get_nodelist_2(self):
         str_node_all = ""
         hostname_list = []
+        id_list = []
         for hostname in self.config['node']:
             hostname_list.append(hostname['name'])
-        for node, hostname in zip(self.config['node'], hostname_list):
+            id_list.append(hostname['id'])
+        for node, hostname, name_id in zip(self.config['node'], hostname_list, id_list):
             dict_node = {}
             str_node = "node "
             index = 0
@@ -265,9 +288,10 @@ class ConfFile(object):
                 dict_node.update({f"ring{index}_addr": ip})
                 index += 1
             dict_node.update({'name': hostname})
+            dict_node.update({'nodeid': name_id})
             str_node += json.dumps(dict_node, indent=4, separators=(',', ': '))
             str_node = FileEdit.remove_comma(str_node)
-            str_node_all += str_node + '\n'
+            str_node_all += str_node + '\n'      #####
         str_node_all = FileEdit.add_data_to_head(str_node_all, '\t')
         str_nodelist = "nodelist {\n%s\n}" % str_node_all
         return str_nodelist
