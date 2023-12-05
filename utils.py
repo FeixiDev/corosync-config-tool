@@ -230,8 +230,10 @@ class ConfFile(object):
             return yaml_dict
         except FileNotFoundError:
             print("Please check the file name:", self.yaml_file)
+            sys.exit()
         except TypeError:
             print("Error in the type of file name.")
+            sys.exit()
 
     def update_yaml(self):
         """更新文件内容"""
