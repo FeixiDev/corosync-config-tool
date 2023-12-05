@@ -1,5 +1,6 @@
 import argparse
 import control
+import sys
 
 def main():
     parser = argparse.ArgumentParser(description="corosync_configuration_tool")
@@ -9,7 +10,7 @@ def main():
 
     if args.version:
         print("corosync-config-tool version: v1.0.0")
-        return
+        sys.exit()
 
     corosync_config = control.CorosyncConsole()
     print('Start to synchronised time')
