@@ -1,15 +1,16 @@
 import argparse
 import control
+import sys
 
 def main():
-    parser = argparse.ArgumentParser(description="corosync_configuration_tool")
+    parser = argparse.ArgumentParser(description=" vsdscoroconf")
     parser.add_argument("-v", "--version", action="store_true", help="Show version information")
 
     args = parser.parse_args()
 
     if args.version:
-        print("corosync-config-tool version: v1.0.0")
-        return
+        print("vsdscoroconf version: v1.0.0")
+        sys.exit()
 
     corosync_config = control.CorosyncConsole()
     print('Start to synchronised time')
