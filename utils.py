@@ -119,10 +119,8 @@ class Log(object):
         if existing_log_files:
             file_name = existing_log_files[0]
         else:
-            now_time = datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
-            file_name = f"vsdscoroconf_{now_time}.log"
+            file_name = f"vsdscoroconf_{now_date}.log"
 
-        fh = logging.FileHandler(file_name, mode='a')
         fh = logging.FileHandler(file_name, mode='a')
         fh.setLevel(logging.DEBUG)
         formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s", datefmt='%Y-%m-%d %H:%M:%S')
