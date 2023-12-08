@@ -8,6 +8,7 @@ import yaml
 # import time
 import json
 import re
+import os
 
 # class SSHConn(object):
 #     def __init__(self, host, port=22, username="root", password=None, timeout=8):
@@ -100,26 +101,31 @@ def exec_cmd(cmd, conn=None):
 
 
 class Log(object):
-    def __init__(self):
-        pass
+    _instance = None
 
     def __new__(cls, *args, **kwargs):
-        if not hasattr(cls, '_instance'):
-            Log._instance = super().__new__(cls)
-            Log._instance.logger = logging.getLogger()
-            Log._instance.logger.setLevel(logging.INFO)
-            Log.set_handler(Log._instance.logger)
-        return Log._instance
+        if not cls._instance:
+            cls._instance = super().__new__(cls)
+            cls._instance.logger = logging.getLogger()
+            cls._instance.logger.setLevel(logging.INFO)
+            cls._instance.set_handler()
+        return cls._instance
 
     @staticmethod
-    def set_handler(logger):
-        now_time = datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
-        file_name = str(now_time) + '.log'
+    def set_handler(self):
+        now_date = datetime.datetime.now().strftime('%Y-%m-%d')
+        existing_log_files = [file for file in os.listdir('.') if file.startswith(f"vsdscoroconf_{now_date}")]
+        
+        if existing_log_files:
+            file_name = existing_log_files[0]
+        else:
+            file_name = f"vsdscoroconf_{now_date}.log"
+
         fh = logging.FileHandler(file_name, mode='a')
         fh.setLevel(logging.DEBUG)
         formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s", datefmt='%Y-%m-%d %H:%M:%S')
         fh.setFormatter(formatter)
-        logger.addHandler(fh)
+        self.logger.addHandler(fh)
 
 
 class FileEdit(object):
