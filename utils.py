@@ -111,11 +111,10 @@ class Log(object):
             cls._instance.set_handler()
         return cls._instance
 
-    @staticmethod
     def set_handler(self):
         now_date = datetime.datetime.now().strftime('%Y-%m-%d')
         existing_log_files = [file for file in os.listdir('.') if file.startswith(f"vsdscoroconf_{now_date}")]
-        
+
         if existing_log_files:
             file_name = existing_log_files[0]
         else:
