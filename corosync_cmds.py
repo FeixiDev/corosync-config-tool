@@ -1,4 +1,5 @@
 import utils
+import os
 
 corosync_conf_path = '/etc/corosync/corosync.conf'
 original_attr = {'cluster_name': 'debian',
@@ -30,13 +31,16 @@ def restart_corosync(ssh_conn=None):
 
 
 def backup_corosync(ssh_conn=None):
-    cmd = f'cp /etc/corosync/corosync.conf /etc/corosync/corosync.confbak'
-    result = utils.exec_cmd(cmd, ssh_conn)
-    return result
-
+    backup_file = '/etc/corosync/corosync.conf.vsds.bak'
+    if not os.path.exists(backup_file):
+        cmd = f'cp /etc/corosync/corosync.conf /etc/corosync/corosync.conf.vsds.bak'
+        result = utils.exec_cmd(cmd, ssh_conn)
+        return result
+    else:
+        return None
 
 def sync_time(ssh_conn=None):
-    cmd = 'sudo ntpdate -u cn.ntp.org.cn'
+    cmd = 'timedatectl set-timezone Asia/Shanghai'
     result = utils.exec_cmd(cmd, ssh_conn)
     return result
 
@@ -48,6 +52,7 @@ def change_corosync2_conf(cluster_name, bindnetaddr, bindnetaddr_list, interface
     '''
     quorum_content = '        expected_votes: 2'
     editor = utils.FileEdit(corosync_conf_path) 
+    editor.remove_nodelist()
     editor.replace_data(f"cluster_name: {original_attr['cluster_name']}", f"cluster_name: {cluster_name}")
     editor.replace_data(f"bindnetaddr: {original_attr['bindnetaddr']}", f"bindnetaddr: {bindnetaddr}")
     interface_content = f'''
@@ -80,7 +85,7 @@ def change_corosync2_conf(cluster_name, bindnetaddr, bindnetaddr_list, interface
 
 def change_corosync3_conf(cluster_name, nodelist, ssh_conn=None):
     editor = utils.FileEdit(corosync_conf_path)
-
+    editor.remove_nodelist()
     editor.replace_data(f"cluster_name: {original_attr['cluster_name']}", f"cluster_name: {cluster_name}")
     editor.replace_data(f"provider: corosync_votequorum",f"provider: corosync_votequorum\n        expected_votes: 2")
     editor.insert_data(nodelist, anchor=nodelist_pos, type='above')

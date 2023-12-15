@@ -139,10 +139,41 @@ class FileEdit(object):
 
     def replace_data(self, old, new):
         if not old in self.data:
-            print('The content does not exist')
+            print(f'The content does not exist\n{old}')
             return
         self.data = self.data.replace(old, new)
         return self.data
+    
+    def remove_nodelist(self):
+        pattern = 'provider: corosync_votequorum'  # 要查找的模式
+        lines = self.data.split('\n')
+        found_pattern = False
+        start_index = None
+        middle_index = None
+
+        for index, line in enumerate(lines):
+            if pattern in line:
+                middle_index = index
+                break  # 找到模式后退出循环
+
+        if middle_index is not None:
+            for index in range(middle_index, len(lines)):
+                line = lines[index]
+                if "}" in line:
+                    found_pattern = True
+                    start_index = index
+                    break  # 找到大括号后退出循环
+            
+
+        if found_pattern and start_index is not None:
+            # 删除找到的内容
+            del lines[start_index + 1:]
+
+            # 更新数据
+            self.data = '\n'.join(lines)
+            return True  # 表示成功删除内容
+        else:
+            return False  # 表示未找到要删除的内容
 
     def insert_data(self, content, anchor=None, type=None):
         """

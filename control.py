@@ -52,7 +52,7 @@ class CorosyncConsole(object):
         nodelist_3 = self.conn.conf_file.get_nodelist_3()
 
         # for ssh in self.conn.list_ssh:
-            # corosync_cmds.backup_corosync(ssh)
+        corosync_cmds.backup_corosync()
             # result = corosync_cmds.check_corosync(ssh)
             # if isinstance(result, bytes):
             #     result = result.decode('utf-8')

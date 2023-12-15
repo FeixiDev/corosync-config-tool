@@ -3,8 +3,8 @@ import control
 import sys
 
 def main():
-    parser = argparse.ArgumentParser(description=" vsdscoroconf")
-    parser.add_argument("-v", "--version", action="store_true", help="Show version information")
+    parser = argparse.ArgumentParser(description="Tools for configuring Corosync")
+    parser.add_argument("-v", "--version", action="store_true", help="show version information")
 
     args = parser.parse_args()
 
