@@ -1,0 +1,12 @@
+cluster: <cluster name>
+bindnetaddr: <bindnetaddr> # Corosync 版本是 3.x.x 则不需要改项配置
+node:
+  - name: <hostname>
+    ip: <IP>
+    id: <id>
+    heartbeat_line:
+      - <IP>
+  - name: <hostname>
+    id: <id>
+    heartbeat_line:
+      - <IP>
