@@ -23,12 +23,13 @@ class Connect(object):
 
     def get_ssh_conn(self):
         local_ip = utils.get_host_ip()
-        #for node in self.cluster['node']:
-        #    if local_ip == node['ip']:
-        self.list_ssh.append(None)
-        #    else:
+        for node in self.cluster['node']:
+            if local_ip == node['ip']:
+                self.list_ssh.append(None)
+            else:
                 # ssh_conn = utils.SSHConn(host=node['ip'], password=node['ssh_password'])
-        #        self.list_ssh.append(None)
+                self.list_ssh.append(None)
+
 
 class CorosyncConsole(object):
     def __init__(self):
@@ -74,8 +75,7 @@ class CorosyncConsole(object):
 
     def restart_corosync(self):
         try:
-            for ssh in self.conn.list_ssh:
-                corosync_cmds.restart_corosync(ssh)
+            corosync_cmds.restart_corosync()
         except timeout_decorator.timeout_decorator.TimeoutError:
             print('Restarting corosync service timed out')
             sys.exit()
@@ -85,4 +85,4 @@ class CorosyncConsole(object):
         for ssh in self.conn.list_ssh:
             result = corosync_cmds.check_corosync_config(ssh)
             print("-----------------------------")
-            print(f"{result}")
+            print(result)
