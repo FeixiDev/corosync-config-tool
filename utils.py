@@ -1,3 +1,4 @@
+import atexit
 import datetime
 import logging
 import socket
@@ -109,6 +110,7 @@ class Log(object):
             cls._instance.logger = logging.getLogger()
             cls._instance.logger.setLevel(logging.INFO)
             cls._instance.set_handler()
+            atexit.register(cls._instance.close_handler)  # 注册关闭处理程序的方法
         return cls._instance
 
     def set_handler(self):
@@ -126,6 +128,16 @@ class Log(object):
         fh.setFormatter(formatter)
         self.logger.addHandler(fh)
 
+    def close_handler(self):
+        handlers = self.logger.handlers[:]
+        for handler in handlers:
+            if isinstance(handler, logging.FileHandler):
+                # 添加分隔线到日志的最后一行
+                handler.stream.write('\n' + '-' * 50 + ' End of Log ' + '-' * 50 + '\n')
+                handler.flush()
+                handler.close()
+                self.logger.removeHandler(handler)
+
 
 class FileEdit(object):
     def __init__(self, path):
@@ -139,7 +151,7 @@ class FileEdit(object):
 
     def replace_data(self, old, new):
         if not old in self.data:
-            print(f'The content does not exist\n{old}')
+            print('The content does not exist')
             return
         self.data = self.data.replace(old, new)
         return self.data
@@ -150,20 +162,15 @@ class FileEdit(object):
         found_pattern = False
         start_index = None
         middle_index = None
-
         for index, line in enumerate(lines):
             if pattern in line:
                 middle_index = index
-                break  # 找到模式后退出循环
-
-        if middle_index is not None:
-            for index in range(middle_index, len(lines)):
-                line = lines[index]
-                if "}" in line:
-                    found_pattern = True
-                    start_index = index
-                    break  # 找到大括号后退出循环
-            
+                for index in range(middle_index, len(lines)):
+                    line = lines[index]
+                    if "}" in line:
+                        found_pattern = True
+                        start_index = index
+                    break
 
         if found_pattern and start_index is not None:
             # 删除找到的内容

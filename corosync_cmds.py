@@ -1,5 +1,5 @@
-import utils
 import os
+import utils
 
 corosync_conf_path = '/etc/corosync/corosync.conf'
 original_attr = {'cluster_name': 'debian',
@@ -9,10 +9,10 @@ nodelist_pos = "logging {"
 quorum_pos = "        provider: corosync_votequorum"
 
 
-def check_corosync(ssh_conn=None):
-    cmd = f'corosync -v'
-    result = utils.exec_cmd(cmd, ssh_conn)
-    return result
+# def check_corosync(ssh_conn=None):
+#     cmd = f'corosync -v'
+#     result = utils.exec_cmd(cmd, ssh_conn)
+#     return result
 
 
 def check_corosync_config(ssh_conn=None):
@@ -22,9 +22,6 @@ def check_corosync_config(ssh_conn=None):
 
 
 def restart_corosync(ssh_conn=None):
-    if ssh_conn is None:
-        return
-
     cmd = f'systemctl restart corosync'
     result = utils.exec_cmd(cmd, ssh_conn)
     return result
@@ -39,6 +36,7 @@ def backup_corosync(ssh_conn=None):
     else:
         return None
 
+
 def sync_time(ssh_conn=None):
     cmd = 'timedatectl set-timezone Asia/Shanghai'
     result = utils.exec_cmd(cmd, ssh_conn)
@@ -51,7 +49,7 @@ def change_corosync2_conf(cluster_name, bindnetaddr, bindnetaddr_list, interface
         timestamp: on
     '''
     quorum_content = '        expected_votes: 2'
-    editor = utils.FileEdit(corosync_conf_path) 
+    editor = utils.FileEdit(corosync_conf_path)
     editor.remove_nodelist()
     editor.replace_data(f"cluster_name: {original_attr['cluster_name']}", f"cluster_name: {cluster_name}")
     editor.replace_data(f"bindnetaddr: {original_attr['bindnetaddr']}", f"bindnetaddr: {bindnetaddr}")
@@ -67,8 +65,8 @@ def change_corosync2_conf(cluster_name, bindnetaddr, bindnetaddr_list, interface
         editor.replace_data(f"crypto_hash: none", f"crypto_hash: none\n{interface_content}")
 
     # editor.insert_data(interface, anchor=interface_pos, type='under')
-    
     editor.insert_data(nodelist, anchor=nodelist_pos, type='above')
+
     if len(bindnetaddr_list) > 1:
         editor.insert_data(f'\trrp_mode: passive', anchor='        # also set rrp_mode.', type='under')
 
@@ -82,7 +80,6 @@ def change_corosync2_conf(cluster_name, bindnetaddr, bindnetaddr_list, interface
 
     utils.exec_cmd(f'echo "{editor.data}" > {corosync_conf_path}', ssh_conn)
 
-
 def change_corosync3_conf(cluster_name, nodelist, ssh_conn=None):
     editor = utils.FileEdit(corosync_conf_path)
     editor.remove_nodelist()
@@ -91,4 +88,3 @@ def change_corosync3_conf(cluster_name, nodelist, ssh_conn=None):
     editor.insert_data(nodelist, anchor=nodelist_pos, type='above')
 
     utils.exec_cmd(f'echo "{editor.data}" > {corosync_conf_path}', ssh_conn)
-
