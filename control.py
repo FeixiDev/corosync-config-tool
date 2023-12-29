@@ -75,6 +75,7 @@ class CorosyncConsole(object):
 
     def restart_corosync(self):
         try:
+            time.sleep(5)
             corosync_cmds.restart_corosync()
         except timeout_decorator.timeout_decorator.TimeoutError:
             print('Restarting corosync service timed out')
