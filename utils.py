@@ -153,6 +153,9 @@ class FileEdit(object):
         if not old in self.data:
             print('The content does not exist')
             return
+        if "expected_votes: 2" in self.data:
+            print('expected_votes: 2 already exist')
+            return
         self.data = self.data.replace(old, new)
         return self.data
     
