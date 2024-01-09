@@ -23,12 +23,12 @@ class Connect(object):
 
     def get_ssh_conn(self):
         local_ip = utils.get_host_ip()
-        for node in self.cluster['node']:
-            if local_ip == node['ip']:
-                self.list_ssh.append(None)
-            else:
-                # ssh_conn = utils.SSHConn(host=node['ip'], password=node['ssh_password'])
-                self.list_ssh.append(None)
+        # for node in self.cluster['node']:
+        #     if local_ip:
+        self.list_ssh.append(None)
+            # else:
+            #     # ssh_conn = utils.SSHConn(host=node['ip'], password=node['ssh_password'])
+            #     self.list_ssh.append(None)
 
 
 class CorosyncConsole(object):
