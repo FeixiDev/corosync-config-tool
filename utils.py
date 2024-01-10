@@ -153,34 +153,54 @@ class FileEdit(object):
         if not old in self.data:
             print('The content does not exist')
             return
+        if "expected_votes: 2" in self.data:
+            print('expected_votes: 2 already exist')
+            return
         self.data = self.data.replace(old, new)
         return self.data
     
     def remove_nodelist(self):
-        pattern = 'provider: corosync_votequorum'  # 要查找的模式
-        lines = self.data.split('\n')
-        found_pattern = False
-        start_index = None
-        middle_index = None
-        for index, line in enumerate(lines):
-            if pattern in line:
-                middle_index = index
-                for index in range(middle_index, len(lines)):
-                    line = lines[index]
-                    if "}" in line:
-                        found_pattern = True
-                        start_index = index
-                    break
+        # pattern = 'provider: corosync_votequorum'  # 要查找的模式
+        # lines = self.data.split('\n')
+        # found_pattern = False
+        # start_index = None
+        # middle_index = None
+        # for index, line in enumerate(lines):
+        #     if pattern in line:
+        #         middle_index = index
+        #         for index in range(middle_index, len(lines)):
+        #             line = lines[index]
+        #             if "}" in line:
+        #                 found_pattern = True
+        #                 start_index = index
+        #             break
 
-        if found_pattern and start_index is not None:
-            # 删除找到的内容
-            del lines[start_index + 1:]
+        # if found_pattern and start_index is not None:
+        #     # 删除找到的内容
+        #     del lines[start_index + 1:]
+
+        #     # 更新数据
+        #     self.data = '\n'.join(lines)
+        start_pattern = 'nodelist {'  
+        end_pattern = '}'  
+        lines = self.data.split('\n')
+        found_start = False
+        start_index = None
+
+        for index, line in enumerate(lines):
+            if start_pattern in line:
+                found_start = True
+                start_index = index
+                break
+
+        if found_start:
+            del lines[start_index:]  
 
             # 更新数据
             self.data = '\n'.join(lines)
             return True  # 表示成功删除内容
-        else:
-            return False  # 表示未找到要删除的内容
+
+        return False # 表示未找到要删除的内容
 
     def insert_data(self, content, anchor=None, type=None):
         """
