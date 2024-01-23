@@ -1,3 +1,4 @@
+import atexit
 import datetime
 import logging
 import socket
@@ -109,6 +110,7 @@ class Log(object):
             cls._instance.logger = logging.getLogger()
             cls._instance.logger.setLevel(logging.INFO)
             cls._instance.set_handler()
+            atexit.register(cls._instance.close_handler)  # 注册关闭处理程序的方法
         return cls._instance
 
     def set_handler(self):
@@ -126,6 +128,16 @@ class Log(object):
         fh.setFormatter(formatter)
         self.logger.addHandler(fh)
 
+    def close_handler(self):
+        handlers = self.logger.handlers[:]
+        for handler in handlers:
+            if isinstance(handler, logging.FileHandler):
+                # 添加分隔线到日志的最后一行
+                handler.stream.write('\n' + '-' * 50 + ' End of Log ' + '-' * 50 + '\n')
+                handler.flush()
+                handler.close()
+                self.logger.removeHandler(handler)
+
 
 class FileEdit(object):
     def __init__(self, path):
@@ -139,41 +151,56 @@ class FileEdit(object):
 
     def replace_data(self, old, new):
         if not old in self.data:
-            print(f'The content does not exist\n{old}')
+            print('The content does not exist')
+            return
+        if "expected_votes: 2" in self.data:
+            print('expected_votes: 2 already exist')
             return
         self.data = self.data.replace(old, new)
         return self.data
     
     def remove_nodelist(self):
-        pattern = 'provider: corosync_votequorum'  # 要查找的模式
+        # pattern = 'provider: corosync_votequorum'  # 要查找的模式
+        # lines = self.data.split('\n')
+        # found_pattern = False
+        # start_index = None
+        # middle_index = None
+        # for index, line in enumerate(lines):
+        #     if pattern in line:
+        #         middle_index = index
+        #         for index in range(middle_index, len(lines)):
+        #             line = lines[index]
+        #             if "}" in line:
+        #                 found_pattern = True
+        #                 start_index = index
+        #             break
+
+        # if found_pattern and start_index is not None:
+        #     # 删除找到的内容
+        #     del lines[start_index + 1:]
+
+        #     # 更新数据
+        #     self.data = '\n'.join(lines)
+        start_pattern = 'nodelist {'  
+        end_pattern = '}'  
         lines = self.data.split('\n')
-        found_pattern = False
+        found_start = False
         start_index = None
-        middle_index = None
 
         for index, line in enumerate(lines):
-            if pattern in line:
-                middle_index = index
-                break  # 找到模式后退出循环
+            if start_pattern in line:
+                found_start = True
+                start_index = index
+                break
 
-        if middle_index is not None:
-            for index in range(middle_index, len(lines)):
-                line = lines[index]
-                if "}" in line:
-                    found_pattern = True
-                    start_index = index
-                    break  # 找到大括号后退出循环
-            
-
-        if found_pattern and start_index is not None:
-            # 删除找到的内容
-            del lines[start_index + 1:]
+        if found_start:
+            del lines[start_index:]  
 
             # 更新数据
             self.data = '\n'.join(lines)
             return True  # 表示成功删除内容
-        else:
-            return False  # 表示未找到要删除的内容
+
+        return False # 表示未找到要删除的内容
 
     def insert_data(self, content, anchor=None, type=None):
         """

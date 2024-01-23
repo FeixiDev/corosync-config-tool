@@ -9,7 +9,7 @@ def main():
     args = parser.parse_args()
 
     if args.version:
-        print("vsdscoroconf version: v1.0.0")
+        print("vsdscoroconf version: v1.0.1")
         sys.exit()
 
     corosync_config = control.CorosyncConsole()
