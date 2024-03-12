@@ -9,10 +9,10 @@ nodelist_pos = "logging {"
 quorum_pos = "        provider: corosync_votequorum"
 
 
-# def check_corosync(ssh_conn=None):
-#     cmd = f'corosync -v'
-#     result = utils.exec_cmd(cmd, ssh_conn)
-#     return result
+def check_corosync(ssh_conn=None):
+    cmd = f'corosync -v'
+    result = utils.exec_cmd(cmd, ssh_conn)
+    return result
 
 
 def check_corosync_config(ssh_conn=None):
@@ -61,8 +61,10 @@ def change_corosync2_conf(cluster_name, bindnetaddr, bindnetaddr_list, interface
             ttl: 1
         }}
     '''
+    editor.replace_data(f"crypto_hash: none", f"crypto_hash: none\n        token: 3000\n        token_retransmits_before_loss_const: 10")
+
     if "interface" not in editor.data:
-        editor.replace_data(f"crypto_hash: none", f"crypto_hash: none\n{interface_content}")
+        editor.replace_data(f"token_retransmits_before_loss_const: 10", f"token_retransmits_before_loss_const: 10\n{interface_content}")
 
     # editor.insert_data(interface, anchor=interface_pos, type='under')
     editor.insert_data(nodelist, anchor=nodelist_pos, type='above')
