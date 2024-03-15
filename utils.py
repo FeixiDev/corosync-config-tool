@@ -3,59 +3,13 @@ import datetime
 import logging
 import socket
 import sys
-# import paramiko
+import paramiko
 import subprocess
 import yaml
 # import time
 import json
 import re
 import os
-
-# class SSHConn(object):
-#     def __init__(self, host, port=22, username="root", password=None, timeout=8):
-#         self._host = host
-#         self._port = port
-#         self._username = username
-#         self._password = password
-#         self.timeout = timeout
-#         self.ssh_connection = None
-#         self.ssh_conn()
-
-#     def ssh_conn(self):
-#         """
-#         SSH连接
-#         """
-#         try:
-#            conn = paramiko.SSHClient()
-#            conn.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-#            conn.connect(hostname=self._host,
-#                         username=self._username,
-#                         port=self._port,
-#                         password=self._password,
-#                         timeout=self.timeout,
-#                         look_for_keys=False,
-#                         allow_agent=False)
-#            self.ssh_connection = conn
-#        except paramiko.AuthenticationException:
-#            print(f" Error SSH connection message of {self._host}")
-#        except Exception as e:
-#            print(f" Failed to connect {self._host}")
-
-#     def exec_cmd(self, command):
-#        """
-#        命令执行
-#        """
-#        if self.ssh_connection:
-#            stdin, stdout, stderr = self.ssh_connection.exec_command(command)
-#            result = stdout.read()
-#            result = result.decode() if isinstance(result, bytes) else result
-#            if result is not None:
-#                return {"st": True, "rt": result}
-
-#            err = stderr.read()
-#            if err is not None:
-#                return {"st": False, "rt": err}
-
 
 def local_cmd(command):
     """
@@ -87,19 +41,25 @@ def get_host_ip():
 
 def exec_cmd(cmd, conn=None):
     if conn:
-        result = conn.exec_cmd(cmd)
+        result = conn.exec_command(cmd)
+        result_str = result[1].decode() if isinstance(result[1], bytes) else result
+        log_data = f"{conn.get_transport().getpeername()[0]} - {cmd} - {result[1].read().decode()}"
+        Log().logger.info(log_data)
+        # if result['st']:
+        #     pass
+        if result[0] is False:
+            sys.exit()
+        return result_str
     else:
         result = local_cmd(cmd)
-    result_str = result['rt'].decode() if isinstance(result['rt'], bytes) else result
-    log_data = f"{get_host_ip()} - {cmd} - {result_str}"
-    Log().logger.info(log_data)
-    if result['st']:
-        pass
-    if result['st'] is False:
-        sys.exit()
-
-    return result_str
-
+        result_str = result['rt'].decode() if isinstance(result['rt'], bytes) else result
+        log_data = f"{get_host_ip()} - {cmd} - {result_str}"
+        Log().logger.info(log_data)
+        if result['st']:
+            pass
+        if result['st'] is False:
+            sys.exit()
+        return result_str
 
 class Log(object):
     _instance = None
@@ -160,47 +120,35 @@ class FileEdit(object):
         return self.data
     
     def remove_nodelist(self):
-        # pattern = 'provider: corosync_votequorum'  # 要查找的模式
-        # lines = self.data.split('\n')
-        # found_pattern = False
-        # start_index = None
-        # middle_index = None
-        # for index, line in enumerate(lines):
-        #     if pattern in line:
-        #         middle_index = index
-        #         for index in range(middle_index, len(lines)):
-        #             line = lines[index]
-        #             if "}" in line:
-        #                 found_pattern = True
-        #                 start_index = index
-        #             break
+        start_pattern = 'nodelist {'
+        end_pattern = 'logging {'
 
-        # if found_pattern and start_index is not None:
-        #     # 删除找到的内容
-        #     del lines[start_index + 1:]
-
-        #     # 更新数据
-        #     self.data = '\n'.join(lines)
-        start_pattern = 'nodelist {'  
-        end_pattern = '}'  
         lines = self.data.split('\n')
         found_start = False
         start_index = None
+        end_index = None
 
         for index, line in enumerate(lines):
             if start_pattern in line:
                 found_start = True
                 start_index = index
+            elif end_pattern in line and found_start:
+                end_index = index
+                # 如果找到 'logging {'，结束删除
                 break
 
-        if found_start:
-            del lines[start_index:]  
-
+        if found_start and start_index is not None:
+            if end_index is not None:
+                # 删除 'nodelist {' 到 'logging {' 之间的内容（不包括 'logging {'）
+                del lines[start_index:end_index]
+            else:
+                # 如果没有找到 'logging {'，直接删除 'nodelist {' 下的所有内容
+                del lines[start_index:]
             # 更新数据
             self.data = '\n'.join(lines)
             return True  # 表示成功删除内容
-
-        return False # 表示未找到要删除的内容
+        else:
+            return False  # 表示未找到要删除的内容
 
     def insert_data(self, content, anchor=None, type=None):
         """
@@ -284,6 +232,7 @@ class ConfFile(object):
         self.yaml_file = 'corosync_config.yaml'
         self.config = self.read_yaml()
         self.nodelist_generated = False  # 添加标记
+        self.check_node_ids_and_ips()
 
     def read_yaml(self):
         """读YAML文件"""
@@ -383,3 +332,48 @@ class ConfFile(object):
         str_node_all = FileEdit.add_data_to_head(str_node_all, '\t')
         str_nodelist = "nodelist {\n%s\n}" % str_node_all
         return str_nodelist
+    
+    def get_nodes_info(self):
+        """获取节点信息"""
+        nodes_info = []
+
+        for node in self.config.get('node', []):
+            node_info = {
+                "name": node.get('name', ''),
+                "id": node.get('id', 0),
+                "heartbeat_line": node.get('heartbeat_line', []),
+            }
+            nodes_info.append(node_info)
+
+        return nodes_info
+    
+    def check_node_ids_and_ips(self):
+        """检查节点的ID和IP是否有重复"""
+        node_ids = set()
+        node_ips = set()
+        duplicate_ids = set()
+        duplicate_ips = set()
+
+        for node in self.config.get('node', []):
+            node_id = node.get('id', 0)
+            node_ip_list = node.get('heartbeat_line', [])
+
+            if node_id in node_ids:
+                duplicate_ids.add(node_id)
+            else:
+                node_ids.add(node_id)
+
+            for ip in node_ip_list:
+                if ip in node_ips:
+                    duplicate_ips.add(ip)
+                else:
+                    node_ips.add(ip)
+
+        if duplicate_ids:
+            print(f"Error: The ID has been duplicated. Duplicate node IDs found: {duplicate_ids}")
+
+        if duplicate_ips:
+            print(f"Error: The IP has been duplicated. Duplicate node IPs found: {duplicate_ips}")
+        
+        if duplicate_ids or duplicate_ips:
+            sys.exit()

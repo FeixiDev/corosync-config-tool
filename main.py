@@ -5,11 +5,23 @@ import sys
 def main():
     parser = argparse.ArgumentParser(description="Tools for configuring Corosync")
     parser.add_argument("-v", "--version", action="store_true", help="show version information")
+    parser.add_argument("-a", "--add", action="store_true", help="add node")
 
     args = parser.parse_args()
 
     if args.version:
-        print("vsdscoroconf version: v1.0.1")
+        print("vsdscoroconf version: v1.1.0")
+        sys.exit()
+    elif args.add:
+        corosync_config = control.CorosyncConsole()
+        print('Start time synchronisation of local node')
+        corosync_config.sync_time()
+        corosync_config.set_remote_node()
+        print('local node: Start to set up corosync')
+        corosync_config.corosync_conf_change()
+        print('local node: Start to restart corosync')
+        corosync_config.restart_corosync()
+        corosync_config.print_corosync()
         sys.exit()
 
     corosync_config = control.CorosyncConsole()
