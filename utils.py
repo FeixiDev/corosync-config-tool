@@ -111,10 +111,14 @@ class FileEdit(object):
 
     def replace_data(self, old, new):
         if not old in self.data:
-            print('The content does not exist')
+            # print(f'The "{old}" does not exist')
+            log_data = f'The "{old}" does not exist'
+            Log().logger.info(log_data)
             return
         if "expected_votes: 2" in self.data:
-            print('expected_votes: 2 already exist')
+            # print('expected_votes: 2 already exist')
+            log_data = 'expected_votes: 2 already exist'
+            Log().logger.info(log_data)
             return
         self.data = self.data.replace(old, new)
         return self.data
@@ -271,9 +275,21 @@ class ConfFile(object):
             lst.append(f"{'.'.join(ip_list[:3])}.0")
         return lst
 
+    def validate_ipv4(self, ip):
+        # IPv4地址的正则表达式
+        ipv4_pattern = re.compile(r'^(\d{1,3}\.){3}\d{1,3}$')
+        return ipv4_pattern.match(ip)
+
     def get_bindnetaddr(self):
-        bindnetaddr = self.config['bindnetaddr']
-        return bindnetaddr
+        if 'bindnetaddr' in self.config:
+            bindnetaddr = self.config['bindnetaddr']
+            if self.validate_ipv4(bindnetaddr):
+                return bindnetaddr
+            else:
+                print("Error: The value of 'bindnetaddr' in the configuration file is not a valid IPv4 address.")
+                sys.exit()
+        else:
+            return None
 
     def get_interface(self):
         bindnetaddr_list = self.get_bindnetaddr_list()
